@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS-11 Top 8 Dinámico</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --cs-orange: #ff9800;
+            --cs-dark: #0b0e11;
+            --cs-card: #16191c;
+            --success: #4caf50;
+            --error: #ff4b4b;
+            --header-height: 60px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Impact, sans-serif;
+            background-color: var(--cs-dark);
+            background-image: radial-gradient(circle at center, #1a1d20 0%, #0b0e11 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding-top: calc(var(--header-height) + 10px);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* CABECERA MÁS COMPACTA */
+        .header {
+            position: fixed;
+            top: 0; width: 100%; height: var(--header-height);
+            background: rgba(22, 25, 28, 0.95);
+            border-bottom: 2px solid var(--cs-orange);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        .header h1 { font-size: 1.5rem; letter-spacing: 5px; color: var(--cs-orange); margin: 0; }
+
+        .menu-btn {
+            position: absolute; left: 15px;
+            background: transparent; color: #888; border: 1px solid #444;
+            padding: 5px 10px; cursor: pointer; border-radius: 4px;
+            font-size: 10px; text-decoration: none; text-transform: uppercase;
+        }
+
+        .container { width: 95%; max-width: 450px; text-align: center; }
+
+        #situacion-titulo {
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* LISTA OPTIMIZADA PARA RESO BAJA */
+        .top-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+
+        .pos-slot {
+            background: var(--cs-card);
+            border: 1px solid #2a2d30;
+            padding: 8px 15px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .pos-slot.active {
+            border-color: var(--cs-orange);
+            background: #1e2124;
+            transform: scale(1.01);
+        }
+
+        .pos-slot.filled {
+            border-color: var(--success);
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .numero {
+            background: #000;
+            color: var(--cs-orange);
+            min-width: 45px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            margin-right: 12px;
+            font-size: 0.7rem;
+        }
+
+        /* INPUT FLOTANTE SIN RECTÁNGULO FONDO */
+        .input-area {
+            position: fixed;
+            bottom: 25px; /* Separado del borde */
+            width: 90%;
+            max-width: 400px;
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none; /* Permite clickear lo que hay detrás si no es el input */
+        }
+
+        #guess-input {
+            pointer-events: auto; /* El input sí recibe clicks */
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: 30px;
+            border: 2px solid #444;
+            background: #16191c;
+            color: white;
+            font-size: 1rem;
+            text-align: center;
+            outline: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            transition: border-color 0.3s, transform 0.2s;
+        }
+
+        #guess-input:focus { 
+            border-color: var(--cs-orange); 
+            transform: translateY(-2px);
+        }
+
+        .shake { animation: shake 0.3s ease-in-out; border-color: var(--error) !important; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        #btn-next {
+            pointer-events: auto;
+            margin-top: 10px;
+            padding: 8px 20px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            display: none;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+
+        /* ESPACIADOR FINAL PARA QUE EL INPUT NO TAPE EL ÚLTIMO SLOT */
+        .spacer { height: 100px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="index.html" class="menu-btn">←</a>
+        <h1>CS-11 TOP 8</h1>
+    </div>
+
+    <div class="container">
+        <h2 id="situacion-titulo">Cargando desafío...</h2>
+        <div class="top-list" id="lista-puestos"></div>
+        <div class="spacer"></div>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="guess-input" placeholder="Escribe..." autocomplete="off">
+        <button id="btn-next" onclick="elegirNivelAleatorio()">Siguiente Desafío</button>
+    </div>
+
+<script>
+    // Tu base de datos se mantiene igual
+    const situaciones = [
+        {
+            titulo: "Shanghai Major 2024",
+            bloques: [
+                { puesto: "1º", equipos: ["SPIRIT"] },
+                { puesto: "2º", equipos: ["FAZE"] },
+                { puesto: "3-4º", equipos: ["G2", "MOUZ"] },
+                { puesto: "5-8º", equipos: ["VITALITY", "HEROIC", "LIQUID", "THE MONGOLZ"] }
+            ]
+        },
+        {
+            titulo: "PGL Copenhagen Major 2024",
+            bloques: [
+                { puesto: "1º", equipos: ["NAVI"] },
+                { puesto: "2º", equipos: ["FAZE"] },
+                { puesto: "3-4º", equipos: ["VITALITY", "G2"] },
+                { puesto: "5-8º", equipos: ["SPIRIT", "MOUZ", "CLOUD9", "ETERNAL FIRE"] }
+            ]
+        }
+    ];
+
+    let nivelActual = -1; 
+    let slotActual = 0; 
+    let equiposAdivinadosEnBloque = [];
+
+    function elegirNivelAleatorio() {
+        let nuevoNivel;
+        do {
+            nuevoNivel = Math.floor(Math.random() * situaciones.length);
+        } while (nuevoNivel === nivelActual && situaciones.length > 1);
+        
+        nivelActual = nuevoNivel;
+        cargarNivel();
+    }
+
+    function cargarNivel() {
+        const data = situaciones[nivelActual];
+        document.getElementById('situacion-titulo').innerText = data.titulo;
+        slotActual = 0;
+        equiposAdivinadosEnBloque = [];
+        
+        const input = document.getElementById('guess-input');
+        input.disabled = false;
+        input.value = "";
+        input.placeholder = "Escribe...";
+        document.getElementById('btn-next').style.display = "none";
+
+        const lista = document.getElementById('lista-puestos');
+        lista.innerHTML = "";
+
+        let globalSlotId = 0;
+        data.bloques.forEach(bloque => {
+            bloque.equipos.forEach(() => {
+                lista.innerHTML += `
+                    <div class="pos-slot" id="slot-${globalSlotId}" data-bloque-puesto="${bloque.puesto}">
+                        <div class="numero">${bloque.puesto}</div>
+                        <div class="nombre">??????</div>
+                    </div>`;
+                globalSlotId++;
+            });
+        });
+        marcarSlotActivo();
+    }
+
+    function marcarSlotActivo() {
+        document.querySelectorAll('.pos-slot').forEach(s => s.classList.remove('active'));
+        if (slotActual < 8) {
+            const slot = document.getElementById(`slot-${slotActual}`);
+            slot.classList.add('active');
+            const puestoLabel = slot.getAttribute('data-bloque-puesto');
+            document.getElementById('guess-input').placeholder = `Puesto ${puestoLabel}...`;
+        }
+    }
+
+    document.getElementById('guess-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const intento = this.value.toUpperCase().trim();
+            const data = situaciones[nivelActual];
+            
+            let currentBloque = null;
+            let tempCount = 0;
+            for(let b of data.bloques) {
+                tempCount += b.equipos.length;
+                if (slotActual < tempCount) {
+                    currentBloque = b;
+                    break;
+                }
+            }
+
+            if (currentBloque && currentBloque.equipos.includes(intento) && !equiposAdivinadosEnBloque.includes(intento)) {
+                equiposAdivinadosEnBloque.push(intento);
+                const slot = document.getElementById(`slot-${slotActual}`);
+                slot.querySelector('.nombre').innerText = intento;
+                slot.classList.add('filled');
+                
+                slotActual++;
+                this.value = "";
+
+                let nextBloque = null;
+                let tempCountNext = 0;
+                for(let b of data.bloques) {
+                    tempCountNext += b.equipos.length;
+                    if (slotActual < tempCountNext) {
+                        nextBloque = b;
+                        break;
+                    }
+                }
+                
+                if (nextBloque !== currentBloque) {
+                    equiposAdivinadosEnBloque = [];
+                }
+
+                if (slotActual === 8) {
+                    finalizarNivel();
+                } else {
+                    marcarSlotActivo();
+                }
+            } else {
+                this.classList.add('shake');
+                setTimeout(() => this.classList.remove('shake'), 300);
+            }
+        }
+    });
+
+    function finalizarNivel() {
+        confetti({ particleCount: 100, spread: 60, origin: { y: 0.8 } });
+        const input = document.getElementById('guess-input');
+        input.disabled = true;
+        input.placeholder = "¡COMPLETADO!";
+        document.getElementById('btn-next').style.display = "block";
+    }
+
+    window.onload = elegirNivelAleatorio;
+</script>
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS-11 Pro Draft</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --cs-orange: #ff9800;
+            --cs-dark: #0f1214;
+            --cs-card: #1a1d20;
+            --error: #ff4b4b;
+            --success: #4caf50;
+            --header-height: 70px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--cs-dark);
+            color: white;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* --- CABECERA FIJA ESTILO DEPORTIVO --- */
+        .header-fixed {
+            position: fixed;
+            top: 0; left: 0; width: 100%;
+            height: var(--header-height);
+            background: #16191c;
+            border-bottom: 3px solid var(--cs-orange);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .header-fixed h1 {
+            font-size: 2rem; margin: 0; letter-spacing: 8px;
+            color: var(--cs-orange); text-transform: uppercase; font-weight: 900;
+        }
+
+        .menu-btn {
+            position: absolute; left: 20px;
+            background: transparent; color: white; border: 1px solid #444;
+            padding: 8px 15px; cursor: pointer; border-radius: 4px;
+            font-size: 11px; text-decoration: none; text-transform: uppercase;
+        }
+
+        /* --- MODAL DIFICULTAD --- */
+        #difficulty-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9); display: flex;
+            justify-content: center; align-items: center; z-index: 2000;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-content {
+            background: var(--cs-card); padding: 30px; border-radius: 15px;
+            border: 2px solid var(--cs-orange); text-align: center; width: 90%; max-width: 400px;
+        }
+
+        .diff-btn {
+            display: block; width: 100%; padding: 12px; margin: 10px 0;
+            border: none; border-radius: 5px; font-weight: bold; cursor: pointer; text-transform: uppercase;
+            transition: transform 0.2s;
+        }
+        .diff-btn:hover { transform: scale(1.02); }
+
+        .btn-facil { background: #4caf50; color: white; }
+        .btn-medio { background: #ff9800; color: white; }
+        .btn-extremo { background: #f44336; color: white; }
+
+        /* --- CONTENEDOR DRAFT (Vuelve a ser 5 vs 5) --- */
+        .container { 
+            width: 100%; max-width: 800px; 
+            margin-top: calc(var(--header-height) + 40px); 
+            margin-bottom: 200px; padding: 0 20px;
+        }
+
+        .draft-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .team-column { text-align: center; }
+        .side-logo { height: 60px; margin-bottom: 20px; opacity: 0.8; }
+
+        .slot {
+            background: var(--cs-card); border: 1px solid #333; height: 55px; 
+            margin: 10px 0; display: flex; align-items: center; padding: 0 15px; 
+            border-radius: 6px; font-weight: bold; justify-content: space-between; 
+            font-size: 1rem; transition: all 0.3s ease;
+        }
+        
+        .slot.active { border: 2px solid var(--cs-orange); box-shadow: 0 0 15px rgba(255, 152, 0, 0.3); transform: scale(1.02); }
+        .slot.filled { border-color: var(--success); background: #141e15; }
+        .slot-logo { width: 28px; height: 28px; object-fit: contain; margin-right: 10px; }
+        .player-name { color: var(--cs-orange); text-transform: uppercase; }
+
+        /* --- PANEL INFERIOR --- */
+        .footer-controls {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: #16191c; padding: 25px; display: flex;
+            flex-direction: column; align-items: center;
+            border-top: 3px solid var(--cs-orange); z-index: 1000;
+        }
+
+        .rng-container { display: flex; align-items: center; gap: 15px; margin-bottom: 12px; }
+        #team-logo-display { width: 50px; height: 50px; object-fit: contain; }
+        #current-team-name { font-size: 1.2rem; font-weight: 900; letter-spacing: 2px; }
+        
+        #player-input {
+            background: #25282c; border: 2px solid #444; color: white; padding: 14px 25px;
+            font-size: 1.2rem; border-radius: 50px; width: 90%; max-width: 450px; 
+            text-align: center; outline: none; transition: border-color 0.3s;
+        }
+        #player-input:focus { border-color: var(--cs-orange); }
+
+        .input-error { border-color: var(--error) !important; animation: shake 0.2s ease-in-out 2; }
+        @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+    </style>
+</head>
+<body>
+
+<div id="difficulty-modal">
+    <div class="modal-content">
+        <h2 style="letter-spacing: 3px;">SELECCIONAR NIVEL</h2>
+        <button class="diff-btn btn-facil" onclick="setDifficulty(1)">FÁCIL (T1)</button>
+        <button class="diff-btn btn-medio" onclick="setDifficulty(2)">MEDIO (T2)</button>
+        <button class="diff-btn btn-extremo" onclick="setDifficulty(3)">EXTREMO (T3/Mix)</button>
+    </div>
+</div>
+
+<div class="header-fixed">
+    <a href="index.html" class="menu-btn">← VOLVER</a>
+    <h1>CS-11</h1>
+</div>
+
+<div class="container">
+    <div class="draft-grid">
+        <div class="team-column" id="colA">
+            <img src="logos/hud/ctlogo.png" alt="CT Side" class="side-logo">
+            <div class="slot active">SLOT 1</div>
+            <div class="slot">SLOT 2</div>
+            <div class="slot">SLOT 3</div>
+            <div class="slot">SLOT 4</div>
+            <div class="slot">SLOT 5</div>
+        </div>
+        <div class="team-column" id="colB">
+            <img src="logos/hud/terrorist.png" alt="T Side" class="side-logo">
+            <div class="slot">SLOT 1</div>
+            <div class="slot">SLOT 2</div>
+            <div class="slot">SLOT 3</div>
+            <div class="slot">SLOT 4</div>
+            <div class="slot">SLOT 5</div>
+        </div>
+    </div>
+</div>
+
+<div class="footer-controls">
+    <div class="rng-container">
+        <img id="team-logo-display" src="" alt="">
+        <span id="current-team-name">...</span>
+    </div>
+    <input type="text" id="player-input" placeholder="Escribe el nombre del jugador..." autocomplete="off">
+</div>
+
+<script>
+    let dificultadSeleccionada = 0;
+    
+    // Base de datos
+    const db = {
+ 
+// EUROPA
+		
+		"VITALITY": { jugadores: ["apex","zywoo","flamez","mezzi","ropz"], logo: "logos/Europa/vitality.png", niveles: [1, 2] },
+        "MOUZ": { jugadores: ["brollan","torzi", "spinx", "jimpphat","xertion"], logo: "logos/Europa/mouz.svg", niveles: [1] },
+        "FALCONS": { jugadores: ["niko","m0nesy","teses","kyxsan","kyousuke"], logo: "logos/Europa/falcons.png", niveles: [1] },
+        "PARIVISION": { jugadores: ["jame","belchonokk","xielo","nota","zweih"], logo: "logos/Europa/parivision.png", niveles: [1] },
+        "SPIRIT": { jugadores: ["sh1ro","shiro","zont1x","donk", "tnir","magixx"], logo: "logos/Europa/spirit.png", niveles: [1] },
+        "AURORA": { jugadores: ["majer","xantares", "soulfly", "woxic","wicadia"], logo: "logos/Europa/aurora.png", niveles: [1] },
+        "NAVI": { jugadores: ["b1t","bit","aleksib","makazze","im","w0nderfull"], logo: "logos/Europa/navi.svg", niveles: [1] },
+        "ASTRALIS": { jugadores: ["hooxi","phzy","jabbi","staehr","ryu"], logo: "logos/Europa/astralis.svg", niveles: [1] },
+        "G2": { jugadores: ["heavygod","nertz","hunter","sunpayus","matys"], logo: "logos/Europa/g2.png", niveles: [1] },
+        "MONTE": { jugadores: ["afro","rainwaker","bymas","gizmy","azuwu"], logo: "logos/Europa/monte.png", niveles: [2,3] },
+        "FUT": { jugadores: ["dem0n","lauNX","launx","Krabeni","cmtry","dziugss"], logo: "logos/Europa/fut.png", niveles: [2,3] },
+        "HEROIC": { jugadores: ["xfloud","nilo","susp","chr1zn","alkaren","rainwaker","bymas","gizmy","azuwu"], logo: "logos/Europa/heroic.png", niveles: [2,3] },
+        "FAZE": { jugadores: ["twistzz","frozen","karrigan","broky","jcobbb"], logo: "logos/Europa/faze.png", niveles: [2,3] },
+        "NIP": { jugadores: ["snappi","sjuush","r1nkle","xKacpersky","cairne"], logo: "logos/Europa/nip.png", niveles: [2,3] },
+        "GENTLE MATES": { jugadores: ["alex","mopoz","sausol","dav1g","martinezsa"], logo: "logos/Europa/gentlemates.png", niveles: [2,3] },
+        "BIG": { jugadores: ["tabsen","jdc","faven","gr1ks","blamef"], logo: "logos/Europa/big.svg", niveles: [2,3] },
+        "SASHI": { jugadores: ["acor","cabbi","mistr","beccie"], logo: "logos/Europa/sashi.png", niveles: [3] },
+        "CYBERSHOKE": { jugadores: ["glowing","alpha","bl1x1","fenomen","mokujin"], logo: "logos/Europa/cybershoke.png", niveles: [2,3] },
+        "MAGIC": { jugadores: ["aw","tenzy","sfade8","masvai","hite"], logo: "logos/Europa/magic.png", niveles: [3] },
+        "1WIN": { jugadores: ["qikert","oz1k","cronuss","lattykk","reyoz"], logo: "logos/Europa/1win.png", niveles: [3] },
+        "OG": { jugadores: ["cadian","bodyy","spooke","arrozdoce","adamb"], logo: "logos/Europa/og.png", niveles: [2,3] },
+        "ETERNAL FIRE": { jugadores: ["rigon","woro2k","demqq","emstar","jottaaa"], logo: "logos/Europa/eternalfire.png", niveles: [2,3] },
+        "TDK": { jugadores: ["zorte","ax1le","sugar","nafany","xanter"], logo: "logos/Europa/tdk.png", niveles: [3] },
+        "BET-M": { jugadores: ["kiro","bluewhite","executor","zinny","kinqie"], logo: "logos/Europa/betm.png", niveles: [2,3] },
+        "WW": { jugadores: ["deko","strogo","ctom","kelien","meusu"], logo: "logos/Europa/ww.png", niveles: [3] },
+        "WHITEBIRD": { jugadores: ["nickelback","lack1","el1an","forester","travis"], logo: "logos/Europa/whitebird.png", niveles: [2,3] },
+        "EYEBALLERS": { jugadores: ["jw","maxster","bobeksde","dex","roif"], logo: "logos/Europa/eyeballers.png", niveles: [2,3] },
+        "LIQUID": { jugadores: ["malbsmd","naf","ultimate","siuhy","elige"], logo: "logos/Europa/liquid.svg", niveles: [2,3] },
+        "FNATIC": { jugadores: ["krimz","maden","fear","jambo","jackasmo"], logo: "logos/Europa/fnatic.svg", niveles: [2,3] },
+        "3DMAX": { jugadores: ["maka","lucky","misutaaa","exercice","graviti"], logo: "logos/Europa/3dmax.png", niveles: [2,3] },
+        "BETBOOM": { jugadores: ["boombla","siren","diledez","artfrost","magnojez"], logo: "logos/Europa/betboom.png", niveles: [3] },
+        "SINNERS": { jugadores: ["beastik","shock","modo","kisserek","stressarn"], logo: "logos/Europa/sinners.svg", niveles: [3] },
+        "NEMIGA": { jugadores: ["kairon","1eer","sowalio","khan","sypho"], logo: "logos/Europa/nemiga.png", niveles: [3] },
+        "B8": { jugadores: ["afro","rainwaker","bymas","gizmy","azuwu"], logo: "logos/Europa/b8.png", niveles: [2,3] },
+        "ECSTATIC": { jugadores: ["nutnut","buzz","anlelele","tmb","nicoodoz"], logo: "logos/Europa/ecstatic.png", niveles: [3] },
+       
+// AMERICAS
+
+
+	   "FURIA": { jugadores: ["fallen","yuurih","kscerato","yekindar","molodoy"], logo: "logos/America/furia.svg", niveles: [1] },  
+        "9Z": { jugadores: ["max", "dgt","huasopeek","meyern","luchov"], logo: "logos/America/9z.png", niveles: [1] },            
+        "LEGACY": { jugadores: ["art", "dumau","saadzin","latto","nissim"], logo: "logos/America/legacy.png", niveles: [1,2] },           
+        "MIBR": { jugadores: ["lnz", "insani","venomzera","brnz4n","klim"], logo: "logos/America/mibr.webp", niveles: [2,3] },           
+        "PAIN": { jugadores: ["vsm", "nqz","biguzera","piriajr","snow"], logo: "logos/America/pain.webp", niveles: [1,2] },           
+        "RED CANIDS": { jugadores: ["davideus", "drop","chayjesus","kauez","history"], logo: "logos/America/redcanids.webp", niveles: [2] }
+        // Agrega aquí el resto de equipos siguiendo el formato
+    };
+
+    let activeSlotIndex = 0;
+    const allSlots = document.querySelectorAll('.slot');
+    const inputField = document.getElementById('player-input');
+    let targetTeam = "";
+    let usedPlayersData = [];
+
+    function setDifficulty(val) {
+        dificultadSeleccionada = val;
+        document.getElementById('difficulty-modal').style.display = 'none';
+        generateNewTeam();
+        inputField.focus();
+    }
+
+    function generateNewTeam() {
+        const filteredTeams = Object.keys(db).filter(name => db[name].niveles.includes(dificultadSeleccionada));
+        const list = filteredTeams.length > 0 ? filteredTeams : Object.keys(db);
+        targetTeam = list[Math.floor(Math.random() * list.length)];
+        document.getElementById('current-team-name').innerText = targetTeam;
+        document.getElementById('team-logo-display').src = db[targetTeam].logo;
+    }
+
+    inputField.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const val = this.value.toLowerCase().trim();
+            if (db[targetTeam] && db[targetTeam].jugadores.includes(val) && !usedPlayersData.includes(val)) {
+                usedPlayersData.push(val);
+                fillSlot(val);
+                this.value = "";
+            } else { triggerError(); }
+        }
+    });
+
+    function fillSlot(playerName) {
+        const slot = allSlots[activeSlotIndex];
+        slot.innerHTML = `<span><img src="${db[targetTeam].logo}" class="slot-logo"><span class="player-name">${playerName}</span></span> <span style="font-size:10px; opacity:0.5">${targetTeam}</span>`;
+        slot.classList.remove('active'); 
+        slot.classList.add('filled');
+        activeSlotIndex++;
+        
+        if (activeSlotIndex < allSlots.length) { 
+            allSlots[activeSlotIndex].classList.add('active'); 
+            generateNewTeam(); 
+        } else { inputFinal(); }
+    }
+
+    function triggerError() {
+        inputField.classList.add('input-error');
+        setTimeout(() => inputField.classList.remove('input-error'), 400);
+    }
+
+    function inputFinal() {
+        inputField.disabled = true;
+        inputField.placeholder = "DRAFT COMPLETADO";
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+    }
+</script>
+</body>
+</html>

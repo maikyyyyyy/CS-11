@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS-11 Launcher</title>
+    <style>
+        :root {
+            --cs-orange: #ff9800;
+            --cs-blue: #2196f3;
+            --bg-dark: #0b0e11;
+            --header-height: 80px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Impact, sans-serif;
+            background-color: var(--bg-dark);
+            background-image: 
+                linear-gradient(rgba(11, 14, 17, 0.9), rgba(11, 14, 17, 0.9)),
+                url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            /* Ocultamos scroll horizontal pero permitimos vertical para los nuevos slots */
+            overflow-x: hidden;
+        }
+
+        /* --- CABECERA FIJA (STICKY) --- */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: var(--header-height);
+            background: #16191c;
+            border-bottom: 4px solid var(--cs-orange);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.8);
+        }
+
+        .top-bar h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            letter-spacing: 10px;
+            color: var(--cs-orange);
+            text-transform: uppercase;
+            font-weight: 900;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        /* --- CONTENEDOR DE JUEGOS --- */
+        .menu-container {
+            margin-top: calc(var(--header-height) + 40px);
+            margin-bottom: 50px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            align-items: center;
+        }
+
+        .game-card {
+            width: 100%;
+            background: linear-gradient(145deg, #1a1d20, #111417);
+            border-left: 5px solid #333;
+            border-radius: 8px;
+            padding: 20px 25px;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: white;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .game-card:hover {
+            transform: translateX(10px);
+            background: #1e2226;
+        }
+
+        /* Colores dinámicos */
+        .card-active:hover { border-left-color: var(--cs-orange); }
+        .card-wordle:hover { border-left-color: var(--cs-blue); }
+
+        /* Estilo para slots bloqueados */
+        .card-locked {
+            opacity: 0.5;
+            cursor: default;
+            filter: grayscale(1);
+        }
+        .card-locked:hover { transform: none; }
+
+        .icon-box {
+            width: 60px;
+            height: 60px;
+            background: #000;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            margin-right: 20px;
+            border: 1px solid #333;
+        }
+
+        .info h2 {
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 1.3rem;
+        }
+
+        .info p {
+            margin: 3px 0 0;
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .badge {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: #333;
+            color: #aaa;
+            font-size: 9px;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 3px;
+            text-transform: uppercase;
+        }
+
+        .badge-active { background: var(--cs-orange); color: black; }
+
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <h1>CS-11</h1>
+    </div>
+
+    <div class="menu-container">
+        
+        <a href="csdraft.html" class="game-card card-active">
+            <div class="badge badge-active">Disponible</div>
+            <div class="icon-box">📋</div>
+            <div class="info">
+                <h2>Pro Draft 11</h2>
+                <p>Arma tu alineación titular sin fallar.</p>
+            </div>
+        </a>
+
+        <a href="csworlde.html" class="game-card card-wordle">
+            <div class="badge badge-active" style="background:var(--cs-blue)">Disponible</div>
+            <div class="icon-box">⌨️</div>
+            <div class="info">
+                <h2>CS Wordle</h2>
+                <p>Adivina el jugador en 6 intentos.</p>
+            </div>
+        </a>
+
+        <div class="game-card card-locked">
+            <div class="badge">Próximamente...</div>
+            <div class="icon-box">🔒</div>
+            <div class="info">
+                <h2>Nuevo Modo</h2>
+                <p>Contenido en desarrollo.</p>
+            </div>
+        </div>
+
+        <div class="game-card card-locked">
+            <div class="badge">Próximamente...</div>
+            <div class="icon-box">🔒</div>
+            <div class="info">
+                <h2>Nuevo Modo</h2>
+                <p>Contenido en desarrollo.</p>
+            </div>
+        </div>
+
+        <div class="game-card card-locked">
+            <div class="badge">Próximamente...</div>
+            <div class="icon-box">🔒</div>
+            <div class="info">
+                <h2>Nuevo Modo</h2>
+                <p>Contenido en desarrollo.</p>
+            </div>
+        </div>
+
+        <div class="game-card card-locked">
+            <div class="badge">Próximamente...</div>
+            <div class="icon-box">🔒</div>
+            <div class="info">
+                <h2>Nuevo Modo</h2>
+                <p>Contenido en desarrollo.</p>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

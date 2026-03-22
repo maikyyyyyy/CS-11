@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>CS Player Wordle - Elite Edition</title>
+    <style>
+        :root {
+            --cs-orange: #ff9800;
+            --cs-dark: #0f1214;
+            --cs-card: #1a1d20;
+            --tile-border: #333;
+            --correct: #4caf50;
+            --present: #ff9800;
+            --absent: #3a3a3c;
+            --key-bg: #25282c;
+            --error: #ff4b4b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--cs-dark);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 10px;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- CABECERA Y BOTONES --- */
+        .header {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        h1 { 
+            font-size: 1.4rem; 
+            margin: 0; 
+            letter-spacing: 3px; 
+            color: var(--cs-orange);
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(255, 152, 0, 0.3);
+        }
+
+        .menu-btn {
+            background: #25282c;
+            color: var(--cs-orange);
+            border: 2px solid var(--cs-orange);
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            text-decoration: none;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+
+        .menu-btn:hover {
+            background: var(--cs-orange);
+            color: black;
+            box-shadow: 0 0 15px rgba(255, 152, 0, 0.4);
+        }
+
+        /* --- TABLERO --- */
+        #game-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            width: 100%;
+        }
+
+        #game-board {
+            display: grid;
+            gap: 8px;
+            margin: 0 auto;
+            justify-content: center;
+        }
+
+        .tile {
+            width: 55px;
+            height: 55px;
+            border: 2px solid var(--tile-border);
+            background: var(--cs-card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+        }
+
+        .tile.active {
+            border-color: var(--cs-orange);
+            box-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+        }
+
+        /* --- ESTADOS --- */
+        .correct { 
+            background-color: var(--correct) !important; 
+            border-color: var(--correct) !important;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.3);
+        }
+        .present { 
+            background-color: var(--present) !important; 
+            border-color: var(--present) !important;
+            box-shadow: 0 0 15px rgba(255, 152, 0, 0.3);
+            color: black;
+        }
+        .absent { 
+            background-color: var(--absent) !important; 
+            border-color: var(--absent) !important;
+            opacity: 0.6;
+        }
+
+        /* --- TECLADO GAMER --- */
+        #keyboard {
+            width: 100%;
+            max-width: 550px;
+            margin-bottom: 20px;
+            padding: 0 5px;
+        }
+
+        .key-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 8px;
+            touch-action: manipulation;
+        }
+
+        .key {
+            background-color: var(--key-bg);
+            color: #ddd;
+            border: 1px solid #444;
+            border-radius: 6px;
+            margin: 0 3px;
+            height: 55px;
+            flex: 1;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.1s;
+            box-shadow: 0 3px 0 #111;
+        }
+
+        .key:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #111;
+        }
+
+        .key.wide { flex: 2; font-size: 12px; color: var(--cs-orange); }
+
+        /* --- MENSAJES Y FEEDBACK --- */
+        #message { 
+            height: 30px; 
+            margin: 10px 0; 
+            font-weight: bold; 
+            color: var(--cs-orange); 
+            font-size: 1rem; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #reset-btn {
+            padding: 10px 25px;
+            background: var(--correct);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 15px;
+            display: none;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.4);
+        }
+
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .shake { animation: shake 0.2s ease-in-out 2; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>CS Wordle</h1>
+        <a href="index.html" class="menu-btn">← MENU</a>
+    </div>
+
+    <div id="message">Cargando...</div>
+    
+    <button id="reset-btn" onclick="initGame()">Siguiente Jugador</button>
+
+    <div id="game-container">
+        <div id="game-board"></div>
+    </div>
+
+    <div id="keyboard">
+        <div class="key-row">
+            <button class="key" id="key-Q" onclick="handleInput('Q')">Q</button>
+            <button class="key" id="key-W" onclick="handleInput('W')">W</button>
+            <button class="key" id="key-E" onclick="handleInput('E')">E</button>
+            <button class="key" id="key-R" onclick="handleInput('R')">R</button>
+            <button class="key" id="key-T" onclick="handleInput('T')">T</button>
+            <button class="key" id="key-Y" onclick="handleInput('Y')">Y</button>
+            <button class="key" id="key-U" onclick="handleInput('U')">U</button>
+            <button class="key" id="key-I" onclick="handleInput('I')">I</button>
+            <button class="key" id="key-O" onclick="handleInput('O')">O</button>
+            <button class="key" id="key-P" onclick="handleInput('P')">P</button>
+        </div>
+        <div class="key-row">
+            <button class="key" id="key-A" onclick="handleInput('A')">A</button>
+            <button class="key" id="key-S" onclick="handleInput('S')">S</button>
+            <button class="key" id="key-D" onclick="handleInput('D')">D</button>
+            <button class="key" id="key-F" onclick="handleInput('F')">F</button>
+            <button class="key" id="key-G" onclick="handleInput('G')">G</button>
+            <button class="key" id="key-H" onclick="handleInput('H')">H</button>
+            <button class="key" id="key-J" onclick="handleInput('J')">J</button>
+            <button class="key" id="key-K" onclick="handleInput('K')">K</button>
+            <button class="key" id="key-L" onclick="handleInput('L')">L</button>
+            <button class="key" id="key-1" onclick="handleInput('1')">1</button>
+        </div>
+        <div class="key-row">
+            <button class="key wide" onclick="handleInput('ENTER')">ENTER</button>
+            <button class="key" id="key-Z" onclick="handleInput('Z')">Z</button>
+            <button class="key" id="key-X" onclick="handleInput('X')">X</button>
+            <button class="key" id="key-C" onclick="handleInput('C')">C</button>
+            <button class="key" id="key-V" onclick="handleInput('V')">V</button>
+            <button class="key" id="key-B" onclick="handleInput('B')">B</button>
+            <button class="key" id="key-N" onclick="handleInput('N')">N</button>
+            <button class="key" id="key-M" onclick="handleInput('M')">M</button>
+            <button class="key" id="key-0" onclick="handleInput('0')">0</button>
+            <button class="key wide" onclick="handleInput('BACKSPACE')">⌫</button>
+        </div>
+    </div>
+
+    <script>
+        // Lista original de jugadores
+        const players = ["JW", "SDY", "MIR", "ART", "SHZ", "VSM", "NQZ", "DRG", "DZT", "ZQK", "ALLU", "XIZT", "AIZY", "KRIMZ", "NEXA", "NIKO", "SHOX", "APEX", "GADE", "ACOR", "ROEJ", "DROP", "NBQQ", "KRAD", "JAME", "RAIN", "ROPZ", "FAME", "HEN1", "F1KU", "YDNA", "PAKA", "SNAX", "NAWWK", "HEAP", "LEKR0", "ZYWOO", "TABSEN", "K1TO", "FAVEN", "K0NFIG", "BLAMEF", "ES3TAG", "JABBI", "STAVN", "TESES", "CADIAN", "EXIT", "OSEE", "HISTORY", "LUX", "PANCC", "JDC", "AJTT", "JERRY", "KENSI", "NORWI", "ZOREE", "BYMAS", "TORZSI", "LUCKY", "NPL", "B1T", "INTERZ", "AX1LE", "BUSTER", "SANJI", "JKS", "BROKY", "FER", "FNX", "VINI", "JOTA", "CHELO", "WOOD7", "KHTEX", "CAIKE", "RUSH", "ABLEJ", "DRAKEN", "VEXITE", "ALKAREN", "KNTZ", "ROBBY", "BLOCKER", "MIKKI", "EXPRO", "LEAF", "LOORD", "NINJAZ", "ZORTE", "NUKKYE", "SANDEN", "HOOXI", "F0REST", "GOLDEN", "FLUSHA", "BROLLAN", "PLOPSKI", "HAMPUS", "HUNTER", "TIZIAN", "MAGISK", "GLA1VE", "XYP9X", "FARLIG", "ZYPHON", "SJUUSH", "TWISTZZ", "NAF", "ELIGE", "GRIM", "BRNZ4N", "TUURTLE", "FORSYY", "SHOCK", "LACK1", "SPIIDI", "SLAXZ", "FROZEN", "DEXTER", "HEADTR1CK", "S1MPLE", "BOOMBL1", "HOBB1T", "NAFANY", "N0RB3R7", "QIKERT", "M0NESY", "ALEKSIB", "FALLEN", "BOLTZ", "SKULLZ", "YUURIH", "LAND1N", "TATAZIN", "DEV7L", "TADPOLE", "TAHSIN", "NOPEEJ", "CHELLEOS", "WORO2K", "HALLZERK", "MISUTAAA", "RPK", "SYRSON", "XANTARES", "BUBZKJI", "DUPREEH", "DEVICE", "NICOODOZ", "REFREZH", "SAFFEE", "NEOFRAG", "FORESTER", "EL1AN", "SHALFEY", "KAIR0N", "KRYSTAL", "RELAXX", "PERFECTO", "YEKINDAR", "LUCAOZY", "BIGUZERA", "HARDZAO", "KSCERATO", "PESADELO", "GETRIGHT", "DUKEFISSURA", "SOMEDIEYOUNG", "W0NDERFUL", "ELECTRONIC", "GOSPADAROV", "FACECRACK"];
+
+        let targetWord = "";
+        let currentAttempt = 0;
+        let currentGuess = "";
+        const maxAttempts = 6;
+        let gameOver = false;
+
+        function initGame() {
+            const targetLength = Math.floor(Math.random() * (7 - 2 + 1)) + 2;
+            const filteredPlayers = players.filter(p => p.length === targetLength);
+            targetWord = filteredPlayers[Math.floor(Math.random() * filteredPlayers.length)].toUpperCase();
+            
+            currentAttempt = 0;
+            currentGuess = "";
+            gameOver = false;
+            document.getElementById('reset-btn').style.display = 'none';
+            document.getElementById('message').innerText = `DESAFÍO: ${targetLength} LETRAS`;
+            
+            // Reset teclado
+            document.querySelectorAll('.key').forEach(k => {
+                k.style.backgroundColor = "";
+                k.style.borderColor = "";
+                k.style.color = "";
+            });
+
+            const board = document.getElementById('game-board');
+            board.innerHTML = '';
+            board.style.gridTemplateColumns = `repeat(${targetWord.length}, 55px)`;
+            
+            for (let i = 0; i < maxAttempts * targetWord.length; i++) {
+                const tile = document.createElement('div');
+                tile.classList.add('tile');
+                tile.id = `tile-${i}`;
+                board.appendChild(tile);
+            }
+        }
+
+        function handleInput(key) {
+            if (gameOver) return;
+            key = key.toUpperCase();
+
+            if (key === 'ENTER') {
+                if (currentGuess.length === targetWord.length) submitGuess();
+                else shakeRow();
+            } else if (key === 'BACKSPACE' || key === 'BACK' || key === '⌫') {
+                currentGuess = currentGuess.slice(0, -1);
+                updateBoard();
+            } else if (/^[A-Z0-9]$/.test(key)) {
+                if (currentGuess.length < targetWord.length) {
+                    currentGuess += key;
+                    updateBoard();
+                }
+            }
+        }
+
+        function updateBoard() {
+            for (let i = 0; i < targetWord.length; i++) {
+                const tile = document.getElementById(`tile-${(currentAttempt * targetWord.length) + i}`);
+                tile.innerText = currentGuess[i] || "";
+                if (currentGuess[i]) tile.classList.add('active');
+                else tile.classList.remove('active');
+            }
+        }
+
+        function shakeRow() {
+            for (let i = 0; i < targetWord.length; i++) {
+                document.getElementById(`tile-${(currentAttempt * targetWord.length) + i}`).classList.add('shake');
+            }
+            setTimeout(() => {
+                for (let i = 0; i < targetWord.length; i++) {
+                    document.getElementById(`tile-${(currentAttempt * targetWord.length) + i}`).classList.remove('shake');
+                }
+            }, 400);
+        }
+
+        function submitGuess() {
+            let guessArr = currentGuess.split("");
+            let targetArr = targetWord.split("");
+            
+            for (let i = 0; i < targetWord.length; i++) {
+                const tile = document.getElementById(`tile-${(currentAttempt * targetWord.length) + i}`);
+                const char = guessArr[i];
+                const keyElement = document.getElementById(`key-${char}`);
+
+                if (char === targetArr[i]) {
+                    tile.classList.add('correct');
+                    if (keyElement) {
+                        keyElement.style.backgroundColor = "var(--correct)";
+                        keyElement.style.borderColor = "var(--correct)";
+                        keyElement.style.color = "white";
+                    }
+                } else if (targetArr.includes(char)) {
+                    tile.classList.add('present');
+                    if (keyElement && !keyElement.style.backgroundColor.includes("correct")) {
+                        keyElement.style.backgroundColor = "var(--present)";
+                        keyElement.style.borderColor = "var(--present)";
+                        keyElement.style.color = "black";
+                    }
+                } else {
+                    tile.classList.add('absent');
+                    if (keyElement && !keyElement.style.backgroundColor) {
+                        keyElement.style.backgroundColor = "var(--absent)";
+                        keyElement.style.opacity = "0.5";
+                    }
+                }
+            }
+
+            if (currentGuess === targetWord) {
+                document.getElementById('message').innerText = "¡NICE SHOT! 🎉 GANASTE";
+                finish();
+            } else {
+                currentAttempt++;
+                currentGuess = "";
+                if (currentAttempt === maxAttempts) {
+                    document.getElementById('message').innerText = `EL JUGADOR ERA: ${targetWord}`;
+                    finish();
+                }
+            }
+        }
+
+        function finish() {
+            gameOver = true;
+            document.getElementById('reset-btn').style.display = 'block';
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === "Backspace") handleInput("BACKSPACE");
+            else handleInput(e.key);
+        });
+
+        initGame();
+    </script>
+</body>
+</html>
